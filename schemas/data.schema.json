@@ -161,6 +161,59 @@
               "verdict":          { "type": "string", "enum": ["BUY","HOLD","WATCH","AVOID","SELL"] },
               "verdict_reason":   { "type": "string" }
             }
+          },
+          "verdict_changed_from": {
+            "type": "string",
+            "enum": ["BUY","HOLD","WATCH","AVOID","SELL"],
+            "description": "Previous day's verdict when it differs from today's. Absent when unchanged."
+          },
+          "fundamentals": {
+            "type": "object",
+            "description": "PE, EPS, earnings surprise from yfinance (best-effort, may be {}).",
+            "additionalProperties": true
+          },
+          "short_interest": {
+            "type": "object",
+            "description": "Short float %, days-to-cover from yfinance (best-effort, may be {}).",
+            "additionalProperties": true
+          },
+          "insider_cluster": {
+            "type": "object",
+            "description": "Cluster of insider Form 4 transactions (best-effort, may be {}).",
+            "additionalProperties": true
+          },
+          "options_flow": {
+            "type": "object",
+            "description": "Unusual options activity metrics (best-effort, may be {}).",
+            "additionalProperties": true
+          },
+          "news_sentiment": {
+            "type": "object",
+            "description": "Aggregate keyword sentiment across recent news.",
+            "properties": {
+              "score":               { "type": ["number", "null"] },
+              "positive_count":      { "type": "integer" },
+              "negative_count":      { "type": "integer" },
+              "neutral_count":       { "type": "integer" },
+              "label":               { "type": "string" },
+              "top_positive_title":  { "type": ["string", "null"] },
+              "top_negative_title":  { "type": ["string", "null"] }
+            },
+            "additionalProperties": true
+          },
+          "risk": {
+            "type": "object",
+            "description": "Beta and max-drawdown metrics (best-effort, may be {}).",
+            "properties": {
+              "beta":     { "type": "object", "additionalProperties": true },
+              "drawdown": { "type": "object", "additionalProperties": true }
+            },
+            "additionalProperties": true
+          },
+          "sector_rs": {
+            "type": "object",
+            "description": "Relative strength vs sector peers (best-effort, may be {}).",
+            "additionalProperties": true
           }
         }
       }
@@ -227,6 +280,22 @@
           "rsi":          { "type": ["number", "null"] }
         }
       }
+    },
+    "market_regime": {
+      "type": "object",
+      "description": "Top-level market regime classification from SPY trend + breadth (may be {} when data unavailable).",
+      "properties": {
+        "regime":                { "type": "string", "enum": ["risk_on","risk_off","mixed","neutral","unknown"] },
+        "spy_trend":             { "type": "string", "enum": ["up","down","sideways"] },
+        "spy_above_50ma":        { "type": "boolean" },
+        "spy_above_200ma":       { "type": "boolean" },
+        "advance_decline_ratio": { "type": ["number", "null"] },
+        "breadth_score":         { "type": ["number", "null"] },
+        "vol_regime":            { "type": "string", "enum": ["calm","choppy","high"] },
+        "sector_dispersion":     { "type": ["number", "null"] },
+        "rationale":             { "type": "string" }
+      },
+      "additionalProperties": true
     }
   }
 }
