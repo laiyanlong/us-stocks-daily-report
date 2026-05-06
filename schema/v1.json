@@ -1,0 +1,324 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/YanlongLai/us-stocks-daily-report/main/schema/v1.json",
+  "title": "US Stocks Daily Report — envelope v1",
+  "description": "Shape of report.json emitted by us-stocks-core after each daily run.",
+  "type": "object",
+  "required": ["schema_version", "generated_at_utc", "source", "ticker_count", "data"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Semantic version of this schema, e.g. '1.0.0'."
+    },
+    "generated_at_utc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp of when the report was generated."
+    },
+    "source": {
+      "type": "string",
+      "description": "Identifier of the engine that produced this report.",
+      "const": "us-stocks-core"
+    },
+    "schema_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Canonical URL of this schema file."
+    },
+    "ticker_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of tickers in the data map."
+    },
+    "data": {
+      "type": "object",
+      "description": "Map of ticker symbol → per-ticker payload.",
+      "additionalProperties": {
+        "$ref": "#/$defs/TickerPayload"
+      }
+    }
+  },
+  "$defs": {
+    "TickerPayload": {
+      "type": "object",
+      "description": "All data for a single ticker symbol.",
+      "required": ["symbol", "name", "sector", "price_change_pct", "indicators", "ownership", "signals", "price_history"],
+      "additionalProperties": true,
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "Ticker symbol, e.g. 'AAPL'."
+        },
+        "name": {
+          "type": "string",
+          "description": "Company display name."
+        },
+        "sector": {
+          "type": "string",
+          "description": "GICS sector name."
+        },
+        "price_change_pct": {
+          "type": ["number", "null"],
+          "description": "Day-over-day price change percentage."
+        },
+        "price_changes": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Multi-period price change percentages (1d, 5d, 30d, 90d, ytd).",
+          "properties": {
+            "1d_pct": { "type": ["number", "null"] },
+            "5d_pct": { "type": ["number", "null"] },
+            "30d_pct": { "type": ["number", "null"] },
+            "90d_pct": { "type": ["number", "null"] },
+            "ytd_pct": { "type": ["number", "null"] }
+          }
+        },
+        "indicators": {
+          "$ref": "#/$defs/Indicators"
+        },
+        "ownership": {
+          "$ref": "#/$defs/Ownership"
+        },
+        "signals": {
+          "$ref": "#/$defs/Signals"
+        },
+        "earnings_date_next": {
+          "type": ["string", "null"],
+          "description": "Next scheduled earnings date (YYYY-MM-DD) or null."
+        },
+        "filings_recent": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Filing" },
+          "description": "Recent SEC EDGAR filings (8-K / 10-Q / 10-K)."
+        },
+        "fundamentals": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Valuation + earnings-quality metrics.",
+          "properties": {
+            "pe_ratio": { "type": ["number", "null"] },
+            "eps_ttm": { "type": ["number", "null"] },
+            "eps_next_q_est": { "type": ["number", "null"] },
+            "revenue_ttm": { "type": ["number", "null"] },
+            "profit_margin": { "type": ["number", "null"] },
+            "earnings_surprise_pct": { "type": ["number", "null"] },
+            "forward_pe": { "type": ["number", "null"] }
+          }
+        },
+        "short_interest": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Short-selling metrics.",
+          "properties": {
+            "short_pct_float": { "type": ["number", "null"] },
+            "shares_short": { "type": ["integer", "null"] },
+            "days_to_cover": { "type": ["number", "null"] },
+            "short_ratio": { "type": ["number", "null"] }
+          }
+        },
+        "insider_cluster": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Insider transaction cluster analysis (90-day window).",
+          "properties": {
+            "verdict": { "type": "string" }
+          }
+        },
+        "options_flow": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Options unusual-activity metrics (put/call ratio, OI skew, ATM IV)."
+        },
+        "news": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/NewsItem" },
+          "description": "Recent news headlines (yfinance + Finnhub merged)."
+        },
+        "news_sentiment": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Rule-based aggregate news sentiment scores."
+        },
+        "news_commentary": {
+          "type": "string",
+          "description": "Gemini AI per-ticker news commentary (present only when AI succeeds)."
+        },
+        "news_commentary_summary": {
+          "type": "string",
+          "description": "Cleaned one-paragraph summary from news_commentary."
+        },
+        "news_commentary_highlights": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Bullet-point highlights extracted from news_commentary."
+        },
+        "risk": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "60-day rolling beta vs SPY + 1-year max drawdown.",
+          "properties": {
+            "beta": { "type": "object", "additionalProperties": true },
+            "drawdown": { "type": "object", "additionalProperties": true }
+          }
+        },
+        "data_quality": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Data completeness and quality scores."
+        },
+        "sector_rs": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Relative strength within sector."
+        },
+        "hot_rank": {
+          "type": ["number", "null"],
+          "description": "Composite popularity/momentum rank score."
+        },
+        "price_history": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PriceBar" },
+          "description": "Last ~750 trading days of OHLCV bars for client-side charting."
+        }
+      }
+    },
+    "Indicators": {
+      "type": "object",
+      "description": "Technical indicator snapshot for the latest trading day.",
+      "required": ["latest_close", "rsi_14"],
+      "additionalProperties": true,
+      "properties": {
+        "latest_close": { "type": "number" },
+        "ma_5": { "type": ["number", "null"] },
+        "ma_10": { "type": ["number", "null"] },
+        "ma_20": { "type": ["number", "null"] },
+        "ma_60": { "type": ["number", "null"] },
+        "ma_120": { "type": ["number", "null"] },
+        "ma_200": { "type": ["number", "null"] },
+        "ma_200_slope": { "type": ["number", "null"] },
+        "rsi_14": { "type": ["number", "null"] },
+        "macd": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "macd": { "type": "number" },
+            "signal": { "type": "number" },
+            "hist": { "type": "number" }
+          }
+        },
+        "kd": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "k": { "type": "number" },
+            "d": { "type": "number" }
+          }
+        },
+        "bollinger": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "upper": { "type": "number" },
+            "mid": { "type": "number" },
+            "lower": { "type": "number" },
+            "bandwidth": { "type": "number" }
+          }
+        },
+        "hv_20": { "type": ["number", "null"] },
+        "volume_5d_avg": { "type": ["number", "null"] },
+        "volume_today": { "type": ["number", "null"] }
+      }
+    },
+    "Ownership": {
+      "type": "object",
+      "description": "Institutional ownership + insider transaction summary.",
+      "additionalProperties": true,
+      "properties": {
+        "institutional_pct": { "type": ["number", "null"] },
+        "insider_net_30d": { "type": ["string", "null"] },
+        "insider_transactions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "date": { "type": "string" },
+              "insider": { "type": "string" },
+              "title": { "type": "string" },
+              "type": { "type": "string" },
+              "shares": { "type": ["number", "null"] },
+              "value_usd": { "type": ["number", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "Signals": {
+      "type": "object",
+      "description": "Rule-based trading signals and overall verdict.",
+      "required": ["verdict"],
+      "additionalProperties": true,
+      "properties": {
+        "trend_label": { "type": "string" },
+        "trend_reason": { "type": "string" },
+        "momentum_label": { "type": "string" },
+        "momentum_reason": { "type": "string" },
+        "volume_label": { "type": "string" },
+        "volume_reason": { "type": "string" },
+        "ownership_label": { "type": "string" },
+        "ownership_reason": { "type": "string" },
+        "verdict": { "type": "string" },
+        "verdict_reason": { "type": "string" },
+        "contributions": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Per-signal contribution scores in -2..+2.",
+          "properties": {
+            "trend": { "type": "number" },
+            "momentum": { "type": "number" },
+            "volume": { "type": "number" },
+            "ownership": { "type": "number" }
+          }
+        }
+      }
+    },
+    "Filing": {
+      "type": "object",
+      "description": "Single SEC EDGAR filing entry.",
+      "additionalProperties": true,
+      "properties": {
+        "type": { "type": "string" },
+        "date": { "type": "string" },
+        "title": { "type": "string" },
+        "url": { "type": "string", "format": "uri" }
+      }
+    },
+    "NewsItem": {
+      "type": "object",
+      "description": "Single news headline.",
+      "additionalProperties": true,
+      "properties": {
+        "title": { "type": "string" },
+        "url": { "type": "string" },
+        "source": { "type": "string" },
+        "date": { "type": "string" },
+        "summary": { "type": "string" }
+      }
+    },
+    "PriceBar": {
+      "type": "object",
+      "description": "Single OHLCV trading day bar.",
+      "required": ["date", "close"],
+      "additionalProperties": true,
+      "properties": {
+        "date": { "type": "string", "format": "date" },
+        "open": { "type": "number" },
+        "high": { "type": "number" },
+        "low": { "type": "number" },
+        "close": { "type": "number" },
+        "volume": { "type": "integer" }
+      }
+    }
+  }
+}
